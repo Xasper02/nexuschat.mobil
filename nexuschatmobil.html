@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>NexusChat - Live Enterprise Edition</title>
+    <!-- 📥 Firebase Resmi Kütüphaneleri Dahil Ediliyor -->
+    <script src="https://gstatic.com"></script>
+    <script src="https://gstatic.com"></script>
+    <style>
+        :root {
+            --bg-main: #0b0e14;
+            --bg-container: #151922;
+            --bg-input: #1e2433;
+            --bg-input-focus: #232a3d;
+            --bg-sidebar: #0f121a;
+            --bg-chat: #181d29;
+            --bg-bubble-rec: #2f3640;
+            --color-primary: #5865f2;
+            --color-primary-hover: #4752c4;
+            --color-danger: #da373c;
+            --color-success: #248046;
+            --color-text: #f5f6fa;
+            --color-muted: #949ba4;
+            --border-color: #2c3242;
+        }
+
+        * { box-sizing: border-box; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+        input { -webkit-user-select: text; user-select: text; }
+        body { background-color: var(--bg-main); color: var(--color-text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; height: 100dvh; overflow: hidden; }
+        .auth-container { 
+            background: var(--bg-container); 
+            padding: 30px; 
+            border-radius: 16px; 
+            border: 1px solid var(--border-color); 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6); 
+            text-align: center; 
+            width: 90%; 
+            max-width: 360px; 
+        }
+        .brand-name { font-size: 28px; font-weight: 900; letter-spacing: 3px; margin: 0 0 25px 0; color: #fff; text-shadow: 0 0 10px rgba(88, 101, 242, 0.4); }
+        .brand-name span { color: var(--color-primary); }
+        h2 { font-size: 22px; margin-bottom: 20px; color: #fff; }
+        
+        input, select { 
+            width: 100%; 
+            padding: 14px; 
+            margin: 10px 0; 
+            background: var(--bg-input); 
+            border: 1px solid var(--border-color); 
+            border-radius: 8px; 
+            color: #fff; 
+            font-size: 15px; 
+            outline: none;
+        }
+        input:focus, select:focus { border-color: var(--color-primary); background: var(--bg-input-focus); }
+        button { 
+            width: 100%; 
+            padding: 14px; 
+            background: var(--color-primary); 
+            color: #fff; 
+            border: none; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            margin-top: 10px; 
+            font-size: 15px; 
+            transition: background 0.2s; 
+            display: flex; justify-content: center; align-items: center;
+        }
+        button:hover { background: var(--color-primary-hover); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        p { margin-top: 25px; font-size: 14px; color: var(--color-muted); }
+        a { color: var(--color-primary); text-decoration: none; font-weight: bold; cursor: pointer; }
+
+        .app-container { 
+            display: none; 
+            width: 100vw; 
+            height: 100dvh; 
+            background: var(--bg-container); 
+            overflow: hidden; 
+            position: fixed; top: 0; left: 0; 
+            flex-direction: column; 
+            z-index: 50;
+        }
+        .main-layout { display: flex; flex: 1; overflow: hidden; width: 100%; position: relative; }
+        .announcement-bar { 
+            background: var(--color-danger); 
+            color: #fff; 
+            padding: 10px 15px; 
+            font-weight: bold; 
+            text-align: center; 
+            font-size: 13px; 
+            display: none; 
+            z-index: 60;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        }
+
+        .sidebar { 
+            width: 280px; 
+            background: var(--bg-sidebar); 
+            padding: 20px; 
+            display: flex; 
+            flex-direction: column; 
+            border-right: 1px solid var(--border-color); 
+            position: absolute; top: 0; left: -280px; 
+            height: 100%; 
+            z-index: 99; 
+            transition: left 0.3s cubic-bezier(0.1, 0.9, 0.2, 1);
+        }
+        .sidebar.active { left: 0; }
+        .sidebar h3 { margin-top: 0; color: #fff; font-size: 18px; margin-bottom: 15px; }
+        .btn-create { width: 100%; padding: 12px; background: var(--color-success); border-radius: 8px; margin-bottom: 6px; font-size: 13px; font-weight: bold; border: none; color: white; cursor: pointer; }
+        .btn-unban-panel { width: 100%; padding: 12px; background: #7289da; border-radius: 8px; margin-bottom: 6px; font-size: 13px; font-weight: bold; border: none; color: white; cursor: pointer; display: none; }
+        .btn-gmail-panel { width: 100%; padding: 12px; background: #e67e22; border-radius: 8px; margin-bottom: 6px; font-size: 13px; font-weight: bold; border: none; color: white; cursor: pointer; display: none; }
+        .btn-panic-toggle { width: 100%; padding: 12px; background: #9b59b6; border-radius: 8px; margin-bottom: 6px; font-size: 13px; font-weight: bold; border: none; color: white; cursor: pointer; display: none; }
+        .btn-audit-toggle { width: 100%; padding: 12px; background: #34495e; border-radius: 8px; margin-bottom: 12px; font-size: 13px; font-weight: bold; border: none; color: white; cursor: pointer; display: none; }
+
+        .group-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; }
+        .group-item { padding: 12px 14px; background: var(--bg-input); border-radius: 8px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border: 1px solid transparent; font-weight: 500; font-size: 14px; color: #b5bac1; }
+        .group-item.active { background: var(--color-primary); color: #fff; }
+        .group-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.15); font-weight: bold; }
+        
+        .user-profile-footer { padding-top: 15px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: var(--bg-sidebar); }
+        .user-info-wrapper { display: flex; align-items: center; gap: 10px; }
+        .user-status-dot { font-size: 11px; color: #35a55a; font-weight: 500; }
+        .logout-btn { background: var(--color-danger); padding: 8px 12px; border-radius: 6px; font-size: 12px; width: auto; margin: 0; border: none; color: white; cursor: pointer; }
+        .chat-area { flex: 1; display: flex; flex-direction: column; background: #1c212e; width: 100%; }
+        .chat-header { padding: 15px 20px; background: var(--bg-container); border-bottom: 1px solid var(--border-color); font-weight: 600; font-size: 16px; color: #fff; display: flex; justify-content: space-between; align-items: center; }
+        .menu-toggle-btn { background: none; border: none; color: white; font-size: 22px; cursor: pointer; width: auto; margin: 0; padding: 0 10px 0 0; }
+        .search-box { background: var(--bg-input); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 6px; color: white; font-size: 13px; width: 100px; margin: 0; }
+
+        .admin-header-actions { display: none; gap: 5px; }
+        .btn-lock { background: #e74c3c; padding: 6px 10px; font-size: 11px; border-radius: 4px; border: none; color: white; font-weight: bold; cursor: pointer; width: auto; margin: 0; }
+        .btn-unlock { background: #2ecc71; padding: 6px 10px; font-size: 11px; border-radius: 4px; border: none; color: white; font-weight: bold; cursor: pointer; width: auto; margin: 0; }
+        .messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; background: var(--bg-chat); -webkit-overflow-scrolling: touch; }
+        .msg-row { display: flex; gap: 10px; width: 100%; position: relative; }
+        .msg-row.sent { flex-direction: row-reverse; }
+        
+        .avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 13px; color: #fff; flex-shrink: 0; text-transform: uppercase; background: var(--color-primary); cursor: pointer; }
+        .msg-content-wrapper { display: flex; flex-direction: column; max-width: 75%; }
+        .msg-row.sent .msg-content-wrapper { align-items: flex-end; }
+        .msg-sender-name { font-size: 12px; color: var(--color-muted); margin-bottom: 4px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+        .level-tag { font-size: 9px; color: #57f287; font-weight: bold; background: rgba(87,242,135,0.1); padding: 1px 4px; border-radius: 3px; }
+        .role-tag { font-size: 9px; padding: 1px 4px; border-radius: 4px; font-weight: bold; text-transform: uppercase; color: #fff; }
+        .role-admin { background: var(--color-danger); box-shadow: 0 0 8px rgba(218,55,60,0.6); }
+        .role-user { background: #4f545c; }
+        .role-bot { background: var(--color-primary); }
+
+        .msg-bubble-container { display: flex; align-items: center; gap: 8px; width: 100%; }
+        .msg-row.sent .msg-bubble-container { flex-direction: row-reverse; }
+        .msg-bubble { padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.4; word-wrap: break-word; }
+        .msg-row.sent .msg-bubble { background: var(--color-primary); color: #fff; border-bottom-right-radius: 2px; }
+        .msg-row.received .msg-bubble { background: var(--bg-bubble-rec); color: var(--color-text); border-bottom-left-radius: 2px; }
+        .delete-msg-btn { background: transparent; border: none; color: #ff4757; cursor: pointer; font-size: 11px; padding: 2px 4px; display: none; width: auto; margin: 0; }
+        .msg-row:hover .delete-msg-btn { display: inline-block; }
+        .lock-notice-box { display: none; width: 100%; padding: 15px; background: rgba(218,55,60,0.15); border: 1px dashed var(--color-danger); color: #ff4d4d; border-radius: 8px; text-align: center; font-size: 13px; font-weight: bold; animation: pulse 2s infinite; }
+        .chat-input-area { padding: 12px 15px; background: var(--bg-container); border-top: 1px solid var(--border-color); display: flex; gap: 8px; align-items: center; position: relative; }
+        .chat-input-area input { margin: 0; flex: 1; padding: 12px; font-size: 14px; }
+        .emoji-btn { background: #2f3640; border: none; color: white; width: auto; padding: 10px 12px; margin: 0; border-radius: 8px; font-size: 16px; cursor: pointer; }
+        .chat-input-area button#send-msg-btn { margin: 0; width: auto; padding: 12px 18px; background: var(--color-primary); font-size: 14px; }
+        .emoji-panel { display: none; position: absolute; bottom: 65px; left: 15px; background: var(--bg-container); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; grid-template-columns: repeat(5, 1fr); gap: 5px; z-index: 100; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .emoji-item { font-size: 20px; cursor: pointer; padding: 5px; text-align: center; border-radius: 4px; }
+        .emoji-item:hover { background: var(--border-color); }
+
+        /* 🚨 GÖRSEL DÜZELTME: Tüm yönetim pencereleri varsayılan olarak gizlendi */
+        .admin-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 999; padding: 20px; }
+        .admin-modal-content { background: var(--bg-container); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; width: 100%; max-width: 320px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .admin-modal h4 { margin: 0 0 12px 0; font-size: 18px; color: #fff; }
+        .admin-modal p { margin: 10px 0; font-size: 14px; color: #b5bac1; }
+        .admin-modal .modal-actions { display: flex; gap: 10px; margin-top: 15px; }
+        .admin-modal .modal-actions button { margin: 0; padding: 12px; font-size: 14px; }
+        .btn-cancel { background: #4f545c; }
+        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 98; }
+        .sidebar-overlay.active { display: block; }
+        @keyframes pulse { 0% { opacity: 0.8; } 50% { opacity: 1; } 100% { opacity: 0.8; } }
+    </style>
+</head>
+<body>
+    <div class="auth-container" id="auth-panel" style="display: block;">
+        <div class="brand-name">NEXUS<span>CHAT</span></div>
+        <div id="auth-form-step">
+            <h2 id="auth-title">Giriş Yap</h2>
+            <input type="text" id="auth-username" placeholder="Kullanıcı Adı" autocomplete="off">
+            <input type="email" id="auth-email" placeholder="Gmail Adresi (Örn: ad@gmail.com)" autocomplete="off">
+            <input type="password" id="auth-password" placeholder="Şifre">
+            <button id="auth-submit-btn" onclick="handleAuthSubmit()">Devam Et</button>
+            <p id="auth-toggle-text">Hesabınız yok mu? <a onclick="toggleAuthMode()">Kayıt Ol</a></p>
+        </div>
+        <div id="auth-code-step" style="display: none;">
+            <h2>E-posta Doğrulama</h2>
+            <p style="font-size: 13px;" id="code-sent-info">E-posta adresinize bir doğrulama kodu gönderildi.</p>
+            <div style="background: rgba(88,101,242,0.1); padding: 10px; border-radius: 6px; color: #fee75c; margin: 10px 0; font-size: 13px; font-weight: bold;">
+                Güvenli Giriş Kodu: <span id="mock-code-display" style="font-size: 16px; letter-spacing: 2px;">00000</span>
+            </div>
+            <input type="text" id="auth-verification-code" placeholder="5 Haneli Kodu Girin" maxlength="5">
+            <button style="background: var(--color-success);" onclick="verifyCodeAndLogin()">Kodu Doğrula ve Giriş Yap</button>
+            <button class="btn-cancel" style="margin-top: 8px; width:100%; padding:14px;" onclick="cancelVerification()">Geri Dön</button>
+        </div>
+    </div>
+    <div class="app-container" id="app-panel">
+        <div class="announcement-bar" id="ban-announcement">⚠️ Bir kullanıcı sistemden kalıcı olarak uzaklaştırıldı!</div>
+        <div class="main-layout">
+            <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar(false)"></div>
+            <div class="sidebar" id="sidebar-menu">
+                <h3>NexusChat Odaları</h3>
+                <button class="btn-create" onclick="createNewGroup()">+ Yeni Oda Oluştur</button>
+                <button class="btn-unban-panel" id="unban-panel-btn" onclick="openUnbanModal()">Uzaklaştırma Paneli</button>
+                <button class="btn-gmail-panel" id="gmail-panel-btn" onclick="openGmailModal()">Kayıtlı Gmailler</button>
+                <button class="btn-panic-toggle" id="panic-panel-btn" onclick="togglePanicModeAlert()">Siber Operasyon</button>
+                <button class="btn-audit-toggle" id="audit-panel-btn" onclick="openAuditModal()">Sistem Günlüğü</button>
+                <div class="group-list" id="rooms-container"></div>
+                <div class="user-profile-footer">
+                    <div class="user-info-wrapper">
+                        <div class="avatar" id="footer-avatar" onclick="openProfileCard()">U</div>
+                        <div>
+                            <div style="font-weight: bold; font-size: 14px;" id="footer-username">Kullanıcı</div>
+                            <div class="user-status-dot">● Çevrimiçi</div>
+                        </div>
+                    </div>
+                    <button class="logout-btn" onclick="logout()">Çıkış</button>
+                </div>
+            </div>
+            <div class="chat-area">
+                <div class="chat-header">
+                    <div style="display: flex; align-items: center;">
+                        <button class="menu-toggle-btn" onclick="toggleSidebar(true)">☰</button>
+                        <span id="active-room-title">Genel Sohbet</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div class="admin-header-actions" id="admin-lock-controls">
+                            <button class="btn-lock" onclick="setRoomLockState(true)">🔒 Kilitle</button>
+                            <button class="btn-unlock" onclick="setRoomLockState(false)">🔓 Aç</button>
+                        </div>
+                        <input type="text" class="search-box" id="search-input" placeholder="Ara..." oninput="filterMessages()">
+                    </div>
+                </div>
+                <div class="messages" id="messages-container"></div>
+                <div class="chat-input-area" id="input-container-wrapper">
+                    <button class="emoji-btn" id="emoji-toggle-btn" onclick="toggleEmojiPanel()">😀</button>
+                    <div class="emoji-panel" id="emoji-container">
+                        <div class="emoji-item" onclick="appendEmoji('😀')">😀</div>
+                        <div class="emoji-item" onclick="appendEmoji('😂')">😂</div>
+                        <div class="emoji-item" onclick="appendEmoji('🔥')">🔥</div>
+                        <div class="emoji-item" onclick="appendEmoji('👍')">👍</div>
+                        <div class="emoji-item" onclick="appendEmoji('❤️')">❤️</div>
+                    </div>
+                    <input type="text" id="chat-message-input" placeholder="Mesajınızı yazın..." onkeypress="handleChatKeyPress(event)">
+                    <button id="send-msg-btn" onclick="sendMessage()">Gönder</button>
+                    <div class="lock-notice-box" id="room-lock-notice">🔒 Bu oda yönetici tarafından geçici olarak kilitlenmiştir.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- STANDART VE SİBER YÖNETİM MODALLARI -->
+    <div class="admin-modal" id="admin-action-modal">
+        <div class="admin-modal-content">
+            <h4 id="modal-target-user">Kullanıcı Yönetimi</h4>
+            <p>Bu kullanıcı üzerinde gerçekleştirmek istediğiniz eylemi seçin:</p>
+            <div class="modal-actions">
+                <button style="background: var(--color-danger);" onclick="banUser()">Uzaklaştır (Ban)</button>
+                <button class="btn-cancel" onclick="closeAdminModal()">İptal</button>
+            </div>
+        </div>
+    </div>
+    <div class="admin-modal" id="unban-action-modal">
+        <div class="admin-modal-content" style="border-color: var(--color-success);">
+            <h4>Yasaklı Kullanıcılar</h4>
+            <div id="banned-users-list" style="max-height: 180px; overflow-y: auto; text-align: left; margin: 15px 0;"></div>
+            <div class="modal-actions"> <button class="btn-cancel" style="width: 100%;" onclick="closeUnbanModal()">Kapat</button> </div>
+        </div>
+    </div>
+    <div class="admin-modal" id="profile-card-modal">
+        <div class="admin-modal-content" style="border-color: var(--color-primary);">
+            <div class="avatar" id="modal-profile-avatar" style="width: 60px; height: 60px; font-size: 22px; margin: 0 auto 10px auto;">U</div>
+            <h4 id="modal-profile-username">Kullanıcı Adı</h4>
+            <p id="modal-profile-role">Rol: Yükleniyor...</p>
+            <p id="modal-profile-level">Seviye: Lv.1</p>
+            <div class="modal-actions"> <button class="btn-cancel" style="width: 100%;" onclick="closeProfileCard()">Kapat</button> </div>
+        </div>
+    </div>
+    <div class="admin-modal" id="gmail-list-modal">
+        <div class="admin-modal-content" style="border-color: #e67e22; max-width: 420px;">
+            <h4>Hafızadaki Kayıtlı Hesap Verileri</h4>
+            <div id="stored-gmails-list" style="max-height: 250px; overflow-y: auto; text-align: left; margin: 15px 0; font-size: 12px; color: #b5bac1;"></div>
+            <div class="modal-actions"> <button class="btn-cancel" style="width: 100%;" onclick="closeGmailModal()">Kapat</button> </div>
+        </div>
+    </div>
+    <div class="admin-modal" id="panic-management-modal">
+        <div class="admin-modal-content" style="border-color: #9b59b6;">
+            <h4>Siber Güvenlik Operasyon Odası</h4>
+            <p>Sistem protokollerini tetikleyin:</p>
+            <button style="background: #e67e22; font-size:13px;" id="panic-raid-btn" onclick="toggleRaidWall()">Baskın Modu (Kayıt Dondur)</button>
+            <button style="background: #d35400; font-size:13px;" id="panic-mute-btn" onclick="toggleGlobalMuteProtocol()">Sıkıyönetim (Sohbeti Durdur)</button>
+            <button style="background: #c0392b; font-size:13px;" onclick="triggerGlobalNukeEvacuation()">Acil Tahliye (Herkesi Odadan At)</button>
+            <div class="modal-actions"> <button class="btn-cancel" style="width: 100%;" onclick="closePanicModal()">Kapat</button> </div>
+        </div>
+    </div>
+    <div class="admin-modal" id="audit-log-modal">
+        <div class="admin-modal-content" style="border-color: #34495e; max-width: 420px;">
+            <h4>Canlı Siber Denetim Günlüğü (Audit Logs)</h4>
+            <div id="audit-logs-container" style="max-height: 250px; overflow-y: auto; text-align: left; margin: 15px 0; font-size: 11px; color: #2ecc71; font-family: monospace; background:#090d16; padding:10px; border-radius:6px;"></div>
+            <div class="modal-actions"> <button class="btn-cancel" style="width: 100%;" onclick="closeAuditModal()">Kapat</button> </div>
+        </div>
+    </div>
+    <script>
+        // 📥 Ekran görüntünüzdeki gerçek Firebase anahtarlarınız otomatik entegre edildi
+        const firebaseConfig = {
+            apiKey: "AIzaSyCZcAgCtZZ3at_OFzLdpg04BtCpbudNMyE",
+            authDomain: "://firebaseapp.com",
+            databaseURL: "https://firebaseio.com",
+            projectId: "nexuschatmobil",
+            storageBucket: "nexuschatmobil.firebasestorage.app",
+            messagingSenderId: "1022258796355",
+            appId: "1:1022258796355:web:c2d5f0d5a5ad6c02b241f6",
+            measurementId: "G-MKDERGW7DZ"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let state = {
+            isLoginMode: true, currentUser: null, activeRoomId: 'general',
+            rooms: [], messages: [], bannedUsers: [], roomLockStatus: {}, secureUserDatabase: [], auditLogs: [],
+            pendingUser: null, generatedCode: null, bruteForceAttempts: 0, isBruteForceLocked: false, lastMessageTime: 0
+        };
+
+        const OWNER_EMAIL = "spieleerfinder82@gmail.com";
+        const AUTO_MOD_FILTER = ["küfür1", "argo2", "yasaklikelime", "sabotaj", "script", "iframe"];
+        function listenToCloudDatabase() {
+            db.ref('cloud_rooms').on('value', snapshot => {
+                state.rooms = [];
+                snapshot.forEach(child => { state.rooms.push({ id: child.key, ...child.val() }); });
+                if(state.rooms.length === 0) {
+                    db.ref('cloud_rooms/general').set({ name: 'Genel Sohbet', type: 'Genel' });
+                    db.ref('cloud_rooms/gaming').set({ name: 'Oyun Odası', type: 'Gaming' });
+                    db.ref('cloud_rooms/announcements').set({ name: 'Duyurular', type: 'Sistem' });
+                }
+                renderRooms();
+            });
+
+            db.ref('cloud_messages').on('value', snapshot => {
+                state.messages = [];
+                snapshot.forEach(child => { state.messages.push({ id: child.key, ...child.val() }); });
+                renderMessages();
+            });
+
+            db.ref('cloud_bans').on('value', snapshot => { state.bannedUsers = []; snapshot.forEach(child => { state.bannedUsers.push(child.val().toLowerCase()); }); renderMessages(); });
+            db.ref('cloud_locks').on('value', snapshot => { state.roomLockStatus = snapshot.val() || {}; checkRoomLockAndRolePermissions(); renderRooms(); });
+            db.ref('cloud_vault').on('value', snapshot => { state.secureUserDatabase = []; snapshot.forEach(child => { state.secureUserDatabase.push(child.val()); }); });
+            db.ref('cloud_audits').on('value', snapshot => { state.auditLogs = []; snapshot.forEach(child => { state.auditLogs.push(child.val()); }); });
+            db.ref('cloud_panic').on('value', snapshot => { checkRoomLockAndRolePermissions(); });
+        }
+
+        function logSystemEvent(action) {
+            const timestamp = new Date().toLocaleTimeString();
+            db.ref('cloud_audits').push(`[${timestamp}] ${action}`);
+        }
+
+        function toggleSidebar(open) {
+            const sidebar = document.getElementById('sidebar-menu'); const overlay = document.getElementById('sidebar-overlay');
+            if (open) { sidebar.classList.add('active'); overlay.classList.add('active'); } 
+            else { sidebar.classList.remove('active'); overlay.classList.remove('active'); }
+        }
+        function toggleAuthMode() {
+            state.isLoginMode = !state.isLoginMode;
+            document.getElementById('auth-title').innerText = state.isLoginMode ? 'Giriş Yap' : 'Kayıt Ol';
+            document.getElementById('auth-submit-btn').innerText = state.isLoginMode ? 'Devam Et' : 'Kayıt Ol';
+            document.getElementById('auth-toggle-text').innerHTML = state.isLoginMode ? 
+                'Hesabınız yok mu? <a onclick="toggleAuthMode()">Kayıt Ol</a>' : 'Zaten üye misiniz? <a onclick="toggleAuthMode()">Giriş Yap</a>';
+        }
+
+        function handleAuthSubmit() {
+            if (state.isBruteForceLocked) {
+                const lockTime = localStorage.getItem('nx_bf_l_t');
+                if (lockTime && Date.now() < parseInt(lockTime)) { alert("🚨 Siber Engel: Giriş kilitlendi!"); return; } 
+                else { state.isBruteForceLocked = false; state.bruteForceAttempts = 0; }
+            }
+
+            const username = document.getElementById('auth-username').value.trim();
+            const email = document.getElementById('auth-email').value.trim().toLowerCase();
+            const password = document.getElementById('auth-password').value.trim();
+
+            if (!username || !email || !password) { alert('Tüm alanları doldurmanız siber kural gereğidir.'); return; }
+            
+            const lowerName = username.toLowerCase();
+            if ((lowerName.includes("admin") || lowerName.includes("mod") || lowerName.includes("kurucu")) && email !== OWNER_EMAIL) { alert("❌ Yetkili unvanlarını içeren adlar yasaktır!"); return; }
+            if (!email.endsWith('@gmail.com') || email.includes('tempmail') || email.includes('10minutemail')) { alert('Sadece gerçek @gmail.com adresleri kabul edilir.'); return; }
+
+            db.ref('cloud_panic/raid').once('value', snap => {
+                if (snap.val() === true && email !== OWNER_EMAIL) { alert("🚨 Kayıtlar dondurulmuştur!"); return; }
+                db.ref('cloud_panic/whitelist').once('value', whiteSnap => {
+                    const existsInDb = state.secureUserDatabase.some(u => u.email === email);
+                    if (whiteSnap.val() === true && !existsInDb && email !== OWNER_EMAIL) { alert("🔒 Dışarıdan üye alımı kapalıdır."); return; }
+
+                    state.generatedCode = Math.floor(10000 + Math.random() * 90000).toString();
+                    state.pendingUser = { username, email, password, code: state.generatedCode };
+                    document.getElementById('code-sent-info').innerText = `${email} adresine doğrulama kodu iletildi.`;
+                    document.getElementById('mock-code-display').innerText = state.generatedCode;
+                    document.getElementById('auth-form-step').style.display = 'none';
+                    document.getElementById('auth-code-step').style.display = 'block';
+                });
+            });
+        }
+        function cancelVerification() { state.pendingUser = null; state.generatedCode = null; document.getElementById('auth-verification-code').value = ''; document.getElementById('auth-code-step').style.display = 'none'; document.getElementById('auth-form-step').style.display = 'block'; }
+
+        function verifyCodeAndLogin() {
+            const inputCode = document.getElementById('auth-verification-code').value.trim();
+            if (inputCode !== state.generatedCode) {
+                state.bruteForceAttempts += 1;
+                if (state.bruteForceAttempts >= 5) { state.isBruteForceLocked = true; localStorage.setItem('nx_bf_l_t', (Date.now() + 900000).toString()); alert("🚨 Kilitlendi!"); cancelVerification(); return; }
+                alert(`Hatalı kod! Kalan hak: ${5 - state.bruteForceAttempts}`); return;
+            }
+
+            let userRole = "user"; let userLevel = 1;
+            // 🚨 Sadece spieleerfinder82@gmail.com kurucu admin yetkilerini alabilir
+            if (state.pendingUser.email === OWNER_EMAIL) { userRole = "admin"; userLevel = 50; }
+
+            const checkUserIndex = state.secureUserDatabase.findIndex(u => u.email === state.pendingUser.email);
+            if (checkUserIndex === -1) { db.ref('cloud_vault/' + state.pendingUser.username.toLowerCase()).set({ username: state.pendingUser.username, email: state.pendingUser.email, password: state.pendingUser.password, code: state.pendingUser.code }); } 
+            else { db.ref('cloud_vault/' + state.pendingUser.username.toLowerCase() + '/code').set(state.pendingUser.code); }
+            db.ref('cloud_active_sessions/' + state.pendingUser.username.toLowerCase()).set(Date.now());
+
+            state.currentUser = { username: state.pendingUser.username, email: state.pendingUser.email, role: userRole, level: userLevel, token: Date.now().toString() };
+            db.ref('cloud_tokens/' + state.currentUser.username.toLowerCase()).set(state.currentUser.token);
+            logSystemEvent(`${state.currentUser.username} (${userRole}) bulut ağına bağlandı.`);
+
+            document.getElementById('auth-panel').style.display = 'none';
+            document.getElementById('app-panel').style.display = 'flex';
+            
+            // 🔒 Sadece Kurucu Giriş Yaptığında Butonları Görünür Yap (display: block)
+            const isAdmin = (userRole === 'admin');
+            document.getElementById('unban-panel-btn').style.display = isAdmin ? 'block' : 'none';
+            document.getElementById('gmail-panel-btn').style.display = isAdmin ? 'block' : 'none';
+            document.getElementById('panic-panel-btn').style.display = isAdmin ? 'block' : 'none';
+            document.getElementById('audit-panel-btn').style.display = isAdmin ? 'block' : 'none';
+
+            cancelVerification(); listenToCloudDatabase(); initApp();
+        }
+
+        function logout() { if(state.currentUser) { logSystemEvent(`${state.currentUser.username} ayrıldı.`); } state.currentUser = null; document.getElementById('app-panel').style.display = 'none'; document.getElementById('auth-panel').style.display = 'block'; toggleSidebar(false); }
+        function initApp() { document.getElementById('footer-username').innerText = state.currentUser.username; document.getElementById('footer-avatar').innerText = state.currentUser.username.substring(0,2); }
+        function renderRooms() {
+            const container = document.getElementById('rooms-container'); container.innerHTML = '';
+            state.rooms.forEach(room => {
+                const item = document.createElement('div'); item.style.display = 'flex'; item.className = `group-item ${room.id === state.activeRoomId ? 'active' : ''}`;
+                item.onclick = () => {
+                    if (room.type === 'İzole' && state.currentUser.role !== 'admin') { alert("🔒 Giriş yetkiniz bulunmuyor!"); return; }
+                    state.activeRoomId = room.id; document.getElementById('active-room-title').innerText = room.name;
+                    toggleSidebar(false); checkRoomLockAndRolePermissions(); renderRooms(); renderMessages();
+                };
+                const isLocked = state.roomLockStatus[room.id] ? ' 🔒' : '';
+                item.innerHTML = `<span># ${room.name}${isLocked}</span> <span class="group-badge">${room.type}</span>`;
+                container.appendChild(item);
+            });
+        }
+
+        // ÖRNEK 2: UÇTAN UCA İZOLE ÖZEL MESAJLAŞMA S SİSTEMİ
+        function startPrivateDirectMessage(targetUser) {
+            if (targetUser === state.currentUser.username) return;
+            const dmRoomId = [state.currentUser.username, targetUser].sort().join('_dm_');
+            db.ref('cloud_rooms/' + dmRoomId).set({ name: `💬 DM: ${targetUser}`, type: 'Özel' });
+            state.activeRoomId = dmRoomId; document.getElementById('active-room-title').innerText = `💬 DM: ${targetUser}`;
+            closeProfileCard();
+        }
+
+        function checkRoomLockAndRolePermissions() {
+            const currentRoom = state.rooms.find(r => r.id === state.activeRoomId);
+            const inputField = document.getElementById('chat-message-input'); const sendBtn = document.getElementById('send-msg-btn');
+            const emojiBtn = document.getElementById('emoji-toggle-btn'); const lockNotice = document.getElementById('room-lock-notice');
+            document.getElementById('admin-lock-controls').style.display = state.currentUser.role === 'admin' ? 'flex' : 'none';
+
+            if (currentRoom && currentRoom.id === 'announcements' && state.currentUser.role !== 'admin') {
+                inputField.style.display = 'none'; sendBtn.style.display = 'none'; emojiBtn.style.display = 'none';
+                lockNotice.innerText = "🔒 Sadece Kurucu Admin paylaşımlarına açıktır."; lockNotice.style.display = 'block'; return;
+            }
+            if (state.roomLockStatus[state.activeRoomId] === true && state.currentUser.role !== 'admin') {
+                inputField.style.display = 'none'; sendBtn.style.display = 'none'; emojiBtn.style.display = 'none';
+                lockNotice.innerText = "🔒 Bu oda yönetici tarafından kilitlenmiştir."; lockNotice.style.display = 'block';
+            } else {
+                inputField.style.display = 'block'; sendBtn.style.display = 'block'; emojiBtn.style.display = 'block'; lockNotice.style.display = 'none';
+                inputField.disabled = false; inputField.placeholder = "Mesajınızı yazın..."; sendBtn.disabled = false;
+            }
+        }
+
+        function setRoomLockState(isLockTrue) { if (state.currentUser.role !== 'admin') return; db.ref('cloud_locks/' + state.activeRoomId).set(isLockTrue); }
+        function sanitizeInputHTML(dirtyText) { const tempDiv = document.createElement('div'); tempDiv.innerText = dirtyText; return tempDiv.innerHTML; }
+        function renderMessages(filteredList = null) {
+            const container = document.getElementById('messages-container'); container.innerHTML = '';
+            const targetList = filteredList || state.messages.filter(m => m.roomId === state.activeRoomId);
+            targetList.forEach(msg => {
+                if (state.bannedUsers.includes(msg.sender.toLowerCase())) return;
+                const isMe = state.currentUser && msg.sender === state.currentUser.username;
+                const row = document.createElement('div'); row.className = `msg-row ${isMe ? 'sent' : 'received'}`;
+                let deleteButton = (state.currentUser.role === 'admin' || isMe) ? `<button class="delete-msg-btn" onclick="deleteMessage('${msg.id}')">Sil</button>` : '';
+                let renderText = msg.text;
+                if (renderText.includes("http://") || (renderText.includes("https://") && !renderText.includes(".jpg") && !renderText.includes(".png") && !renderText.includes(".gif"))) { renderText = "⚠️ [Güvensiz bağlantı engellendi!]"; }
+                else if (renderText.match(/\.(jpeg|jpg|gif|png)$/) != null) { renderText = `<img src="${renderText}" style="max-width:140px; border-radius:8px; display:block; margin-top:4px;">`; }
+                row.innerHTML = `<div class="avatar" onclick="openSelectedUserProfile('${msg.sender}', '${msg.role}', ${msg.level})">${msg.sender.substring(0,2)}</div><div class="msg-content-wrapper"><div class="msg-sender-name" onclick="openAdminAction('${msg.sender}', '${msg.role}')">${msg.sender} <span class="level-tag">Lv.${msg.level}</span> <span class="role-tag role-${msg.role}">${msg.role}</span></div><div class="msg-bubble-container"><div class="msg-bubble">${renderText}</div>${deleteButton}</div><span class="msg-meta">${msg.time}</span></div>`;
+                container.appendChild(row);
+            });
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function sendMessage() {
+            db.ref('cloud_panic/mute').once('value', snap => {
+                if (snap.val() === true && state.currentUser.role !== 'admin') { alert("Sohbet dondurulmuştur!"); return; }
+                const now = Date.now();
+                if (now - state.lastMessageTime < 2000 && state.currentUser.role !== 'admin') { alert("⚠️ Çok hızlı mesaj gönderiyorsunuz (Spam Engeli)!"); return; }
+                state.lastMessageTime = now;
+
+                const input = document.getElementById('chat-message-input'); let text = input.value.trim(); if (!text) return;
+                text = sanitizeInputHTML(text);
+                let threatDetected = false;
+                AUTO_MOD_FILTER.forEach(word => { if (text.toLowerCase().includes(word)) threatDetected = true; });
+                if (threatDetected) { alert("🚨 BANLANDINIZ!"); executeAutomatedSecurityBan(state.currentUser.username); return; }
+
+                const isEphemeral = text.startsWith('/gizli ');
+                if (isEphemeral) { text = "🕶️ [Gizli Mesaj] " + text.replace('/gizli ', ''); }
+
+                const msgRef = db.ref('cloud_messages').push();
+                msgRef.set({ roomId: state.activeRoomId, sender: state.currentUser.username, role: state.currentUser.role, text: text, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), level: (state.currentUser.level || 1) });
+                input.value = '';
+                if (isEphemeral) { setTimeout(() => { db.ref('cloud_messages/' + msgRef.key).remove(); }, 10000); }
+            });
+        }
+
+        function handleChatKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
+        function deleteMessage(id) { db.ref('cloud_messages/' + id).remove(); }
+        function filterMessages() { const query = document.getElementById('search-input').value.toLowerCase(); const filtered = state.messages.filter(m => m.roomId === state.activeRoomId && m.text.toLowerCase().includes(query)); renderMessages(filtered); }
+        function createNewGroup() { const name = prompt('Oda adını girin:'); if (!name) return; const isPrivateRoom = confirm('Sadece yetkililere özel oda olsun mu?'); db.ref('cloud_rooms').push({ name: name, type: isPrivateRoom ? 'İzole' : 'Genel', isPrivate: isPrivateRoom }); }
+        function toggleEmojiPanel() { const panel = document.getElementById('emoji-container'); panel.style.display = panel.style.display === 'grid' ? 'none' : 'grid'; }
+        function appendEmoji(emoji) { document.getElementById('chat-message-input').value += emoji; toggleEmojiPanel(); }
+        function togglePanicModeAlert() { if (state.currentUser.role !== 'admin') return; document.getElementById('panic-management-modal').style.display = 'flex'; updatePanicModalUi(); }
+        function closePanicModal() { document.getElementById('panic-management-modal').style.display = 'none'; }
+        
+        function updatePanicModalUi() { db.ref('cloud_panic').once('value', snap => { const val = snap.val() || {}; document.getElementById('panic-raid-btn').innerText = val.raid ? "Baskın Modunu KAPAT" : "Baskın Modunu AÇ"; document.getElementById('panic-mute-btn').innerText = val.mute ? "Sıkıyönetimi KAPAT" : "Sıkıyönetimi AÇ"; }); }
+        function toggleRaidWall() { db.ref('cloud_panic/raid').transaction(current => !current, () => updatePanicModalUi()); }
+        function toggleGlobalMuteProtocol() { db.ref('cloud_panic/mute').transaction(current => !current, () => { updatePanicModalUi(); checkRoomLockAndRolePermissions(); }); }
+        function triggerGlobalNukeEvacuation() { if (confirm("Herkes odadan atılacak?")) { db.ref('cloud_panic/nuke_signal').set(Date.now()); closePanicModal(); } }
+        let selectedUserForAction = null;
+        function openAdminAction(username, targetRole) { if (state.currentUser.role !== 'admin' || username === 'NexusBot' || username === state.currentUser.username || targetRole === 'admin') return; selectedUserForAction = username; document.getElementById('modal-target-user').innerText = `${username} Yönetimi`; document.getElementById('admin-action-modal').style.display = 'flex'; }
+        function closeAdminModal() { document.getElementById('admin-action-modal').style.display = 'none'; }
+        function banUser() { if (!selectedUserForAction) return; db.ref('cloud_bans').push(selectedUserForAction.toLowerCase()); closeAdminModal(); }
+        function executeAutomatedSecurityBan(user) { db.ref('cloud_bans').push(user.toLowerCase()); logout(); }
+        
+        function openUnbanModal() {
+            const listContainer = document.getElementById('banned-users-list'); listContainer.innerHTML = '';
+            state.bannedUsers.forEach(user => { const div = document.createElement('div'); div.style.display = 'flex'; div.style.justifyContent = 'space-between'; div.innerHTML = `<span>${user}</span><button style="width:auto; padding:6px 10px; margin:0;" onclick="unbanUser('${user}')">Kaldır</button>`; listContainer.appendChild(div); });
+            document.getElementById('unban-action-modal').style.display = 'flex';
+        }
+        function closeUnbanModal() { document.getElementById('unban-action-modal').style.display = 'none'; }
+        function unbanUser(user) { db.ref('cloud_bans').orderByValue().equalTo(user.toLowerCase()).once('value', snap => { snap.forEach(child => child.ref.remove()); openUnbanModal(); }); }
+        
+        function openProfileCard() { openSelectedUserProfile(state.currentUser.username, state.currentUser.role, state.currentUser.level); }
+        function openSelectedUserProfile(username, role, level) {
+            document.getElementById('modal-profile-avatar').innerText = username.substring(0,2); document.getElementById('modal-profile-username').innerText = username; document.getElementById('modal-profile-role').innerText = `Rol: ${role.toUpperCase()}`; document.getElementById('modal-profile-level').innerText = `Seviye: Lv.${level}`;
+            const actions = document.querySelector('#profile-card-modal .modal-actions'); actions.innerHTML = `<button class="btn-cancel" style="width: 100%;" onclick="closeProfileCard()">Kapat</button>`;
+            if (username !== state.currentUser.username) { const dmBtn = document.createElement('button'); dmBtn.innerText = "💬 Özel Mesaj Gönder"; dmBtn.style.background = "var(--color-success)"; dmBtn.onclick = () => startPrivateDirectMessage(username); actions.insertBefore(dmBtn, actions.firstChild); }
+            document.getElementById('profile-card-modal').style.display = 'flex';
+        }
+        function closeProfileCard() { document.getElementById('profile-card-modal').style.display = 'none'; }
+
+        function startSecurityHeartbeat() { 
+            db.ref('cloud_panic/nuke_signal').on('value', snap => { if (snap.val() && state.currentUser && state.currentUser.role !== 'admin') { logout(); } });
+            setInterval(() => { if (!state.currentUser) return; db.ref('cloud_tokens/' + state.currentUser.username.toLowerCase()).once('value', snap => { if (snap.val() !== state.currentUser.token) logout(); }); }, 3000); 
+        }
+
+        // ÖRNEK 1: KULLANICI ŞİFRESİNİ UZAKTAN DEĞİŞTİRME / SIFIRLAMA
+        function remoteResetPassword(email, username) {
+            if (state.currentUser.role !== 'admin') return;
+            const newPassword = prompt(`${email} şifresini yazın:`); if (!newPassword) return;
+            db.ref('cloud_vault/' + username.toLowerCase() + '/password').set(newPassword, () => { openGmailModal(); alert("Güncellendi!"); });
+        }
+
+        function openGmailModal() {
+            if (state.currentUser.role !== 'admin') return;
+            const container = document.getElementById('stored-gmails-list'); container.innerHTML = '';
+            state.secureUserDatabase.forEach((user, index) => {
+                const item = document.createElement('div'); item.style.padding = '10px 0'; item.style.borderBottom = '1px solid var(--border-color)';
+                item.innerHTML = `<b>${index + 1}. Hesap:</b><br>👤 Ad: <span>${user.username}</span> | ✉️ Mail: <span>${user.email}</span><br>🔑 Şifre: <span style="color:#57f287;">${user.password}</span> | 🔢 Kod: <span>${user.code}</span><br><button style="width:auto; padding:6px 10px; font-size:11px; margin-top:5px; background:#e74c3c;" onclick="remoteResetPassword('${user.email}', '${user.username}')">🔄 Sıfırla</button>`;
+                container.appendChild(item);
+            });
+            document.getElementById('gmail-list-modal').style.display = 'flex';
+        }
+        function closeGmailModal() { document.getElementById('gmail-list-modal').style.display = 'none'; }
+        function openAuditModal() { if (state.currentUser.role !== 'admin') return; const container = document.getElementById('audit-logs-container'); container.innerHTML = state.auditLogs.join('<br>'); document.getElementById('audit-log-modal').style.display = 'flex'; }
+        function closeAuditModal() { document.getElementById('audit-log-modal').style.display = 'none'; }
+    </script>
+</body>
+</html>
